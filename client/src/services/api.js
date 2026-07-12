@@ -17,5 +17,11 @@ export const getPathAnalysis = () => api.get("/path-analysis");
 export const getPopularity = () => api.get("/popularity");
 export const getDependencyImportance = () => api.get("/dependency-importance");
 export const getAISummary = () => api.get("/ai-summary");
+export const analyzeSBOM = (formData) => api.post("/analyze", formData, {
+  headers: {
+    'Content-Type': 'multipart/form-data'
+  }
+});
+export const resetToSample = () => api.post("/reset");
 
 export default api;

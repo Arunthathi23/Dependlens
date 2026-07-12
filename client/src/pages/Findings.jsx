@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getGraph, getStats } from '../services/api';
+import { useDataset } from '../context/DatasetContext';
 import {
   PieChart,
   Pie,
@@ -32,6 +32,7 @@ const MAINTENANCE_COLORS = {
 };
 
 export default function Findings() {
+  const { getGraphData, getStatsData, activeDataset } = useDataset();
   const [graph, setGraph] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -87,8 +88,8 @@ export default function Findings() {
     async function fetchData() {
       try {
         setLoading(true);
-        const graphRes = await getGraph();
-        const statsRes = await getStats();
+        const graphRes = await getGraphData();
+        const statsRes = await getStatsData();
         if (isMounted) {
           setGraph(Array.isArray(graphRes.data) ? graphRes.data : []);
           setStats(statsRes.data);
@@ -103,7 +104,7 @@ export default function Findings() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [activeDataset]);
 
   const handleResetFilters = () => {
     setSearch('');
@@ -138,12 +139,22 @@ export default function Findings() {
 
   // Determine Severity level of a node
   const getNodeSeverity = (node) => {
-    const maxCvss = node.vulnerabilities?.reduce((max, v) => Math.max(max, Number(v.cvssScore || v.cvss || 0)), 0) || 0;
-    if (maxCvss >= 9.0 || node.riskScore >= 80) return 'CRITICAL';
-    if (maxCvss >= 7.0 || node.riskScore >= 60) return 'HIGH';
-    if (maxCvss >= 4.0 || node.riskScore >= 40) return 'MEDIUM';
-    if (maxCvss > 0) return 'LOW';
-    return 'SAFE';
+    const vulns = Array.isArray(node.vulnerabilities) ? node.vulnerabilities : [];
+    if (vulns.length === 0) return 'SAFE';
+
+    const severityRank = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1, SAFE: 0, UNKNOWN: 0 };
+    let maxRank = 0;
+    let maxSev = 'SAFE';
+
+    for (const v of vulns) {
+      const s = String(v.severity || '').toUpperCase();
+      const rank = severityRank[s] || 0;
+      if (rank > maxRank) {
+        maxRank = rank;
+        maxSev = s;
+      }
+    }
+    return maxSev;
   };
 
   // Process & Filter graph data
@@ -191,7 +202,10 @@ export default function Findings() {
       if (onlyVulnerable && (!node.vulnerabilities || node.vulnerabilities.length === 0)) return false;
       if (onlyTransitive && node.depth === 0) return false;
       if (onlyDirect && node.depth > 0) return false;
-      if (onlyLicenseConflicts && node.licenseRisk?.level !== 'High' && node.licenseRisk?.level !== 'Critical') return false;
+      if (onlyLicenseConflicts) {
+        const lvl = String(node.licenseRisk?.level || '').toUpperCase();
+        if (lvl !== 'HIGH' && lvl !== 'CRITICAL' && lvl !== 'UNKNOWN LICENSE RISK') return false;
+      }
       if (onlyUnmaintained && node.maintenanceRisk?.level !== 'High') return false;
 
       // NEW ANOMALIES TOGGLES

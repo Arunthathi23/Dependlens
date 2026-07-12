@@ -33,6 +33,18 @@ function prioritizeRisks(graph) {
     } else {
       node.priority = 'Monitor';
     }
+
+    if (Array.isArray(node.vulnerabilities)) {
+      for (const vulnerability of node.vulnerabilities) {
+        console.log({
+          package: node.name,
+          cvss: vulnerability.cvss,
+          vulnerabilitySeverity: vulnerability.severity,
+          riskScore: node.riskScore,
+          priority: node.priority
+        });
+      }
+    }
   }
 
   return graph;

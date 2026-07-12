@@ -26,7 +26,7 @@ function analyzeMaintenance(graph) {
       node.maintenanceScore = 0;
       node.maintenanceMessage = 'Package actively maintained';
       node.maintenanceRisk = { level: 'Low', message: 'Active' };
-    } else if (days <= 540) {
+    } else if (days <= 548) {
       node.maintenanceStatus = 'Aging';
       node.maintenanceScore = 30;
       node.maintenanceMessage = 'Package shows moderate inactivity';

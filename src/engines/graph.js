@@ -54,6 +54,7 @@ function getApplicationMetadata(applicationId, applicationsMap = new Map()) {
     department: normalizeText(application.department),
     deployment: normalizeText(application.deployment),
     language: normalizeText(application.language),
+    license_model: normalizeText(application.license_model || 'proprietary'),
   };
 }
 
@@ -78,6 +79,7 @@ function enrichNodeWithApplication(node, applicationId, applicationsMap = new Ma
     department: application.department,
     deployment: application.deployment,
     language: application.language,
+    license_model: application.license_model || 'proprietary',
   };
 
   const alreadyAttached = node.applicationDetails.some((detail) => detail.app_id === appDetail.app_id);

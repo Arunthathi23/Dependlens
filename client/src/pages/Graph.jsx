@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getGraph, getStats } from '../services/api';
+import { useDataset } from '../context/DatasetContext';
 import DependencyGraph from '../components/DependencyGraph';
 import {
   BarChart,
@@ -26,6 +26,7 @@ const SEVERITY_COLORS = {
 };
 
 export default function Graph() {
+  const { getGraphData, getStatsData, activeDataset } = useDataset();
   const [graph, setGraph] = useState([]);
   const [stats, setStats] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
@@ -58,8 +59,8 @@ export default function Graph() {
     let isMounted = true;
     async function fetchData() {
       try {
-        const graphRes = await getGraph();
-        const statsRes = await getStats();
+        const graphRes = await getGraphData();
+        const statsRes = await getStatsData();
         if (isMounted) {
           setGraph(Array.isArray(graphRes.data) ? graphRes.data : []);
           setStats(statsRes.data);
@@ -72,7 +73,7 @@ export default function Graph() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [activeDataset]);
 
   const handleResetFilters = () => {
     setSearch('');

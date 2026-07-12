@@ -4,7 +4,7 @@ const Papa = require('papaparse');
 
 function loadCSV(filename) {
   try {
-    const filePath = path.join(__dirname, '..', '..', 'data', filename);
+    const filePath = path.isAbsolute(filename) ? filename : path.join(__dirname, '..', '..', 'data', filename);
     const fileContents = fs.readFileSync(filePath, 'utf8');
     const parsed = Papa.parse(fileContents, {
       header: true,
@@ -19,7 +19,7 @@ function loadCSV(filename) {
 
 function loadJSON(filename) {
   try {
-    const filePath = path.join(__dirname, '..', '..', 'data', filename);
+    const filePath = path.isAbsolute(filename) ? filename : path.join(__dirname, '..', '..', 'data', filename);
     const fileContents = fs.readFileSync(filePath, 'utf8');
     return JSON.parse(fileContents);
   } catch (error) {

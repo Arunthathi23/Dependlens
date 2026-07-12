@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getGraph, getStats, getPriorities, getValidation, getAISummary } from '../services/api';
+import { useDataset } from '../context/DatasetContext';
 import { useNavigate } from 'react-router-dom';
 import {
   PieChart,
@@ -35,6 +35,7 @@ function formatPercent(value) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { getStatsData, getGraphData, getValidationData, getAISummaryData, activeDataset } = useDataset();
   const [stats, setStats] = useState(null);
   const [graph, setGraph] = useState([]);
   const [validation, setValidation] = useState(null);
@@ -52,10 +53,10 @@ export default function Dashboard() {
       try {
         setLoading(true);
         const [statsRes, graphRes, validationRes, aiRes] = await Promise.all([
-          getStats(),
-          getGraph(),
-          getValidation(),
-          getAISummary()
+          getStatsData(),
+          getGraphData(),
+          getValidationData(),
+          getAISummaryData()
         ]);
         if (isMounted) {
           setStats(statsRes.data);
@@ -73,7 +74,7 @@ export default function Dashboard() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [activeDataset]);
 
   // Compute stats dynamically from the graph
   const metrics = useMemo(() => {
@@ -82,8 +83,7 @@ export default function Dashboard() {
     const transitive = graph.filter(node => node.depth > 0).length;
     const vulnerable = graph.filter(node => Array.isArray(node.vulnerabilities) && node.vulnerabilities.length > 0).length;
     const critical = graph.filter(node => 
-      node.priority === 'Fix Immediately' || 
-      node.vulnerabilities?.some(v => v.severity === 'CRITICAL')
+      node.vulnerabilities?.some(v => String(v.severity || '').toUpperCase() === 'CRITICAL')
     ).length;
 
     let licenseConflicts = 0;
@@ -93,7 +93,8 @@ export default function Dashboard() {
 
     graph.forEach(node => {
       totalRisk += node.riskScore || 0;
-      if (node.licenseRisk?.level === 'High' || node.licenseRisk?.level === 'Critical') {
+      const lvl = String(node.licenseRisk?.level || '').toUpperCase();
+      if (lvl === 'HIGH' || lvl === 'CRITICAL' || lvl === 'UNKNOWN LICENSE RISK') {
         licenseConflicts++;
       }
       if (node.maintenanceRisk?.level === 'High') {
@@ -439,11 +440,13 @@ export default function Dashboard() {
 
         <div className="kpi-dashboard-card">
           <div className="kpi-dashboard-card__header">
-            <span className="kpi-dashboard-card__label">Validation Confidence</span>
-            <span className="kpi-dashboard-card__icon">🛡️</span>
+            <span className="kpi-dashboard-card__label">Transitive Ratio</span>
+            <span className="kpi-dashboard-card__icon">⛓️</span>
           </div>
-          <strong className="kpi-dashboard-card__value" style={{ color: '#10b981' }}>{formatPercent(metrics.valConfidence)}</strong>
-          <span className="kpi-dashboard-card__trend">Accuracy index</span>
+          <strong className="kpi-dashboard-card__value" style={{ color: '#8b5cf6' }}>
+            {formatPercent((metrics.transitive / (metrics.total || 1)) * 100)}
+          </strong>
+          <span className="kpi-dashboard-card__trend">Indirect imports</span>
         </div>
       </section>
 
@@ -488,8 +491,8 @@ export default function Dashboard() {
             <button className="btn-action" onClick={() => navigate('/findings')}>
               Open Security Findings
             </button>
-            <button className="btn-action" onClick={() => navigate('/validation')}>
-              View Validation Trust Center
+            <button className="btn-action" onClick={() => navigate('/upload')}>
+              Upload & Analyze SBOM
             </button>
           </div>
         </div>

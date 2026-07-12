@@ -97,6 +97,14 @@ function buildGraphData(payload = []) {
       importanceScore: node?.importanceScore || 0,
       importanceLevel: node?.importanceLevel || 'Low',
 
+      // AI COPILOT INTELLIGENCE
+      securityNarrative: node?.securityNarrative || '',
+      attackAnalysis: node?.attackAnalysis || null,
+      remediation: node?.remediation || null,
+      riskExplanation: node?.riskExplanation || null,
+      businessImpact: node?.businessImpact || null,
+      dependencyPaths: node?.dependencyPaths || [],
+
       type: 'package',
       fx: x,
       fy: y,
@@ -241,8 +249,11 @@ export default function DependencyGraph({ graph = [], filters = {}, graphMode = 
       if (filters.showOnlyDirect && node.depth > 0) {
         return false;
       }
-      if (filters.showOnlyLicenseConflicts && node.licenseRisk?.level !== 'High' && node.licenseRisk?.level !== 'Critical') {
-        return false;
+      if (filters.showOnlyLicenseConflicts) {
+        const lvl = String(node.licenseRisk?.level || '').toUpperCase();
+        if (lvl !== 'HIGH' && lvl !== 'CRITICAL' && lvl !== 'UNKNOWN LICENSE RISK') {
+          return false;
+        }
       }
 
       return true;
@@ -385,7 +396,8 @@ export default function DependencyGraph({ graph = [], filters = {}, graphMode = 
                   isGlow = true;
                 }
               } else if (graphMode === 'license') {
-                const hasLicenseRisk = (target.licenseRisk?.level === 'High' || target.licenseRisk?.level === 'Critical');
+                const targetLvl = String(target.licenseRisk?.level || '').toUpperCase();
+                const hasLicenseRisk = (targetLvl === 'HIGH' || targetLvl === 'CRITICAL' || targetLvl === 'UNKNOWN LICENSE RISK');
                 if (hasLicenseRisk) {
                   strokeColor = 'rgba(139, 92, 246, 0.6)';
                   strokeWidth = 1.6;
@@ -453,7 +465,8 @@ export default function DependencyGraph({ graph = [], filters = {}, graphMode = 
                 const isVuln = node.vulnerabilities?.length > 0;
                 color = isVuln ? '#ef4444' : '#10b981';
               } else if (graphMode === 'license') {
-                const hasLic = node.licenseRisk?.level === 'High' || node.licenseRisk?.level === 'Critical';
+                const nodeLvl = String(node.licenseRisk?.level || '').toUpperCase();
+                const hasLic = nodeLvl === 'HIGH' || nodeLvl === 'CRITICAL' || nodeLvl === 'UNKNOWN LICENSE RISK';
                 color = hasLic ? '#8b5cf6' : '#10b981';
               } else if (graphMode === 'heat') {
                 const score = node.riskScore || 0;

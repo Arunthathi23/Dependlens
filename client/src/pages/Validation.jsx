@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getValidation, getVulnerabilityInstances } from '../services/api';
+import { useDataset } from '../context/DatasetContext';
 import {
   PieChart,
   Pie,
@@ -59,6 +59,7 @@ function normalizeRisk(value) {
 }
 
 export default function Validation() {
+  const { getValidationData, getVulnerabilityInstancesData, activeDataset } = useDataset();
   const [records, setRecords] = useState([]);
   const [summary, setSummary] = useState(null);
   const [vulnerabilitySummary, setVulnerabilitySummary] = useState({
@@ -81,8 +82,8 @@ export default function Validation() {
       try {
         setLoading(true);
         const [valRes, vulnRes] = await Promise.all([
-          getValidation(),
-          getVulnerabilityInstances(),
+          getValidationData(),
+          getVulnerabilityInstancesData(),
         ]);
         if (isMounted) {
           if (valRes.data) {
@@ -107,7 +108,7 @@ export default function Validation() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [activeDataset]);
 
   const normalizedSummary = useMemo(() => {
     const base = summary || {};
@@ -333,8 +334,8 @@ export default function Validation() {
     <div className="validation-page">
       <header className="validation-header">
         <div>
-          <h1>Validation & Trust Center</h1>
-          <p>Measure how accurately DependLens identifies vulnerabilities, resolves transitive risks, and prioritizes software supply-chain threats.</p>
+          <h1>Benchmark & Research Console</h1>
+          <p>Analyze how accurately the pipeline identifies vulnerabilities and grades risk scores against manual label expectations.</p>
         </div>
         <div className={`trust-badge ${overallStatus.className}`}>
           🛡️ Overall Status: {overallStatus.label}

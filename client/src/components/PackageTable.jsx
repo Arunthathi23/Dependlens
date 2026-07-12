@@ -15,11 +15,26 @@ function flattenPriorities(data) {
 }
 
 function getSeverity(node) {
-  const score = Number(node?.riskScore ?? 0);
+  const vulns = Array.isArray(node?.vulnerabilities) ? node.vulnerabilities : [];
+  if (vulns.length === 0) return 'Safe';
 
-  if (score >= 85) return 'Critical';
-  if (score >= 70) return 'High';
-  if (score >= 50) return 'Medium';
+  const severityRank = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1, SAFE: 0, UNKNOWN: 0 };
+  let maxRank = 0;
+  let maxSev = 'Safe';
+
+  for (const v of vulns) {
+    const s = String(v.severity || '').toUpperCase();
+    const rank = severityRank[s] || 0;
+    if (rank > maxRank) {
+      maxRank = rank;
+      maxSev = s;
+    }
+  }
+
+  if (maxSev === 'CRITICAL') return 'Critical';
+  if (maxSev === 'HIGH') return 'High';
+  if (maxSev === 'MEDIUM') return 'Medium';
+  if (maxSev === 'LOW') return 'Low';
   return 'Safe';
 }
 

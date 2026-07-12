@@ -29,8 +29,10 @@ function analyzeLicenses(graph, licenseRules) {
     const normalizedLicense = normalizeLicense(node.license);
 
     if (!normalizedLicense) {
+      const applicationDetails = Array.isArray(node.applicationDetails) ? node.applicationDetails : [];
+      const hasProprietaryApp = applicationDetails.length === 0 || applicationDetails.some(app => app.license_model === 'proprietary');
       node.licenseRisk = {
-        level: 'Unknown License Risk',
+        level: hasProprietaryApp ? 'Unknown License Risk' : 'LOW',
         message: 'Missing license',
         compatibleWithProprietary: false,
         viral: false,
@@ -41,8 +43,10 @@ function analyzeLicenses(graph, licenseRules) {
     const matchedRule = categoryMap.get(normalizedLicense);
 
     if (!matchedRule) {
+      const applicationDetails = Array.isArray(node.applicationDetails) ? node.applicationDetails : [];
+      const hasProprietaryApp = applicationDetails.length === 0 || applicationDetails.some(app => app.license_model === 'proprietary');
       node.licenseRisk = {
-        level: 'Unknown License Risk',
+        level: hasProprietaryApp ? 'Unknown License Risk' : 'LOW',
         message: `Unknown license: ${node.license}`,
         compatibleWithProprietary: false,
         viral: false,
@@ -50,8 +54,12 @@ function analyzeLicenses(graph, licenseRules) {
       continue;
     }
 
+    const applicationDetails = Array.isArray(node.applicationDetails) ? node.applicationDetails : [];
+    const hasProprietaryApp = applicationDetails.length === 0 || applicationDetails.some(app => app.license_model === 'proprietary');
+    const isConflict = !matchedRule.compatible_with_proprietary && hasProprietaryApp;
+
     node.licenseRisk = {
-      level: matchedRule.risk_level || 'Unknown License Risk',
+      level: isConflict ? (matchedRule.risk_level || 'Unknown License Risk') : 'LOW',
       message: matchedRule.notes || `${matchedRule.category || matchedRule.license} license`,
       compatibleWithProprietary: Boolean(matchedRule.compatible_with_proprietary),
       viral: Boolean(matchedRule.viral),
