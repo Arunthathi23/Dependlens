@@ -12,6 +12,13 @@ const riskBandColors = {
   unmaintained: '#64748b' // gray
 };
 
+const MAINTENANCE_COLORS = {
+  Healthy: '#10b981',
+  Aging: '#fbbf24',
+  Stale: '#f97316',
+  Unmaintained: '#ef4444'
+};
+
 function normalizePriority(priority) {
   if (priority === 'Fix Immediately' || priority === 'Fix This Sprint' || priority === 'Monitor') {
     return priority;
@@ -29,7 +36,7 @@ function getNodeTone(node) {
   if (licenseRisk === 'high' || licenseRisk === 'critical') {
     return 'high';
   }
-  if (node?.maintenanceRisk?.level === 'High') {
+  if (node?.maintenanceStatus === 'Unmaintained') {
     return 'unmaintained';
   }
 
@@ -67,6 +74,29 @@ function buildGraphData(payload = []) {
       maintenanceRisk: node?.maintenanceRisk ?? { level: 'Unknown', message: 'No data available' },
       affectedApplications: Array.isArray(node?.affectedApplications) ? node.affectedApplications : [],
       paths: Array.isArray(node?.paths) ? node.paths : [],
+      
+      // NEW ANOMALIES PROPERTIES
+      hasVersionConflict: Boolean(node?.hasVersionConflict),
+      conflictingVersions: Array.isArray(node?.conflictingVersions) ? node.conflictingVersions : [],
+      conflictApplications: Array.isArray(node?.conflictApplications) ? node.conflictApplications : [],
+      hasDiamondDependency: Boolean(node?.hasDiamondDependency),
+      diamondPaths: Array.isArray(node?.diamondPaths) ? node.diamondPaths : [],
+      remediationStatus: node?.remediationStatus || 'NONE',
+      recommendedVersion: node?.recommendedVersion || null,
+      blastRadius: Number(node?.blastRadius ?? 0),
+      impactLevel: node?.impactLevel || 'Low',
+
+      // NEW ECOSYSTEM SCORES
+      maintenanceStatus: node?.maintenanceStatus || 'Healthy',
+      maintenanceScore: node?.maintenanceScore || 0,
+      maintenanceMessage: node?.maintenanceMessage || '',
+      pathCount: node?.pathCount || 1,
+      compoundedRisk: node?.compoundedRisk || node?.riskScore || 0,
+      popularityScore: node?.popularityScore || 0,
+      popularityLevel: node?.popularityLevel || 'Low',
+      importanceScore: node?.importanceScore || 0,
+      importanceLevel: node?.importanceLevel || 'Low',
+
       type: 'package',
       fx: x,
       fy: y,
@@ -121,7 +151,7 @@ function buildGraphData(payload = []) {
   return { nodes, links };
 }
 
-export default function DependencyGraph({ graph = [], filters = {}, graphMode = 'full', onSelectNode }) {
+export default function DependencyGraph({ graph = [], filters = {}, graphMode = 'full', selectedNode, onSelectNode }) {
   const graphRef = useRef(null);
   const canvasRef = useRef(null);
   const [graphData, setGraphData] = useState(() => buildGraphData(graph));
@@ -197,8 +227,8 @@ export default function DependencyGraph({ graph = [], filters = {}, graphMode = 
       }
       // 9. Maintenance filter
       if (filters.maintenanceFilter) {
-        if (filters.maintenanceFilter === 'High' && node.maintenanceRisk?.level !== 'High') return false;
-        if (filters.maintenanceFilter === 'Low' && node.maintenanceRisk?.level === 'High') return false;
+        if (filters.maintenanceFilter === 'High' && node.maintenanceStatus !== 'Unmaintained') return false;
+        if (filters.maintenanceFilter === 'Low' && node.maintenanceStatus === 'Unmaintained') return false;
       }
 
       // Checkboxes
@@ -227,6 +257,54 @@ export default function DependencyGraph({ graph = [], filters = {}, graphMode = 
 
     return { filteredNodes: nodes, filteredLinks: links };
   }, [graphData, filters]);
+
+  // Compute Highlights for dimming/focusing
+  const { highlightNodes, highlightLinks } = useMemo(() => {
+    const hNodes = new Set();
+    const hLinks = new Set();
+
+    if (!selectedNode) {
+      return { highlightNodes: hNodes, highlightLinks: hLinks };
+    }
+
+    hNodes.add(selectedNode.id);
+
+    // Add direct parents and children
+    if (Array.isArray(selectedNode.parents)) {
+      selectedNode.parents.forEach(p => hNodes.add(p));
+    }
+    if (Array.isArray(selectedNode.children)) {
+      selectedNode.children.forEach(c => hNodes.add(c));
+    }
+
+    // Add diamond paths / multiple paths
+    if (selectedNode.hasDiamondDependency && Array.isArray(selectedNode.diamondPaths)) {
+      selectedNode.diamondPaths.forEach(path => {
+        path.forEach(nodeId => hNodes.add(nodeId));
+      });
+    }
+
+    // Add conflict nodes
+    if (selectedNode.hasVersionConflict) {
+      filteredNodes.forEach(node => {
+        if (node.name === selectedNode.name) {
+          hNodes.add(node.id);
+        }
+      });
+    }
+
+    // Identify highlighted links
+    filteredLinks.forEach(link => {
+      const srcId = typeof link.source === 'object' ? link.source.id : link.source;
+      const tgtId = typeof link.target === 'object' ? link.target.id : link.target;
+
+      if (hNodes.has(srcId) && hNodes.has(tgtId)) {
+        hLinks.add(link);
+      }
+    });
+
+    return { highlightNodes: hNodes, highlightLinks: hLinks };
+  }, [selectedNode, filteredNodes, filteredLinks]);
 
   const handleExportJSON = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ nodes: filteredNodes, links: filteredLinks }, null, 2));
@@ -265,10 +343,9 @@ export default function DependencyGraph({ graph = [], filters = {}, graphMode = 
             nodeLabel={(node) => `${node.name} @ v${node.version}`}
             nodeVal={(node) => {
               if (node.type === 'application') return 14;
-              // Node size depends on affected apps, children, and riskScore
-              const appCount = node.affectedApplications?.length || 1;
-              const depCount = node.children?.length || 0;
-              return Math.max(6, Math.min(22, 6 + (appCount * 2) + (depCount * 0.5) + (node.riskScore / 10)));
+              // Size reflects importance score dynamically
+              const importance = Number(node.importanceScore || 1);
+              return Math.max(6, Math.min(26, 6 + (importance / 12)));
             }}
             linkDirectionalArrowLength={6}
             linkDirectionalArrowColor={() => 'rgba(139, 92, 246, 0.4)'}
@@ -289,6 +366,12 @@ export default function DependencyGraph({ graph = [], filters = {}, graphMode = 
 
               ctx.save();
               
+              // Handle dimming/focusing
+              if (selectedNode) {
+                const isHighlighted = highlightLinks.has(link);
+                ctx.globalAlpha = isHighlighted ? 1.0 : 0.08;
+              }
+
               // Edge styling based on Graph Mode
               let strokeColor = 'rgba(113, 130, 164, 0.2)';
               let strokeWidth = 0.8;
@@ -332,6 +415,12 @@ export default function DependencyGraph({ graph = [], filters = {}, graphMode = 
             nodeCanvasObject={(node, ctx, globalScale) => {
               ctx.save();
 
+              // Handle dimming/focusing
+              if (selectedNode) {
+                const isHighlighted = highlightNodes.has(node.id);
+                ctx.globalAlpha = isHighlighted ? 1.0 : 0.08;
+              }
+
               if (node.type === 'application') {
                 const width = Math.max(100, ctx.measureText(node.name).width + 20);
                 const height = 24;
@@ -355,9 +444,10 @@ export default function DependencyGraph({ graph = [], filters = {}, graphMode = 
               // Compute Node styling based on Graph Mode
               let tone = getNodeTone(node);
               let color = riskBandColors[tone] || '#10b981';
-              const appCount = node.affectedApplications?.length || 1;
-              const depCount = node.children?.length || 0;
-              const radius = Math.max(6, Math.min(22, 6 + (appCount * 2) + (depCount * 0.5) + (node.riskScore / 10)));
+              
+              // Size reflects Ecosystem Importance score dynamically
+              const importance = Number(node.importanceScore || 1);
+              const radius = Math.max(6, Math.min(26, 6 + (importance / 12)));
 
               if (graphMode === 'vulnerability') {
                 const isVuln = node.vulnerabilities?.length > 0;
@@ -366,7 +456,6 @@ export default function DependencyGraph({ graph = [], filters = {}, graphMode = 
                 const hasLic = node.licenseRisk?.level === 'High' || node.licenseRisk?.level === 'Critical';
                 color = hasLic ? '#8b5cf6' : '#10b981';
               } else if (graphMode === 'heat') {
-                // Risk score heat gradient (green -> yellow -> red)
                 const score = node.riskScore || 0;
                 if (score >= 70) color = '#ef4444';
                 else if (score >= 40) color = '#fbbf24';
@@ -390,19 +479,18 @@ export default function DependencyGraph({ graph = [], filters = {}, graphMode = 
               // Draw Outlines / Borders
               ctx.beginPath();
               ctx.arc(node.x, node.y, radius + 1.5, 0, Math.PI * 2, false);
-              if (node.licenseRisk?.level === 'High' || node.licenseRisk?.level === 'Critical') {
-                ctx.strokeStyle = '#a78bfa'; // Purple outline for license conflict
-                ctx.lineWidth = 1.5;
-              } else if (node.maintenanceRisk?.level === 'High') {
-                ctx.strokeStyle = '#94a3b8'; // Gray outline for unmaintained
-                ctx.setLineDash([2, 2]);
-                ctx.lineWidth = 1.2;
-              } else {
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-                ctx.lineWidth = 1;
-              }
+              
+              // Border color based on Maintenance Warning level
+              ctx.strokeStyle = MAINTENANCE_COLORS[node.maintenanceStatus] || 'rgba(255, 255, 255, 0.2)';
+              
+              // Border thickness reflects Popularity level
+              let strokeWidth = 1.0;
+              if (node.popularityLevel === 'Very High') strokeWidth = 3.5;
+              else if (node.popularityLevel === 'High') strokeWidth = 2.5;
+              else if (node.popularityLevel === 'Medium') strokeWidth = 1.8;
+              ctx.lineWidth = strokeWidth;
+
               ctx.stroke();
-              ctx.setLineDash([]); // Reset line dash
 
               // Draw CVE badge count (if any)
               if (node.vulnerabilities?.length > 0) {
@@ -426,15 +514,60 @@ export default function DependencyGraph({ graph = [], filters = {}, graphMode = 
                 ctx.fillText(node.vulnerabilities.length, bx, by);
               }
 
-              // Draw Warning Icons or Badges
-              if (node.licenseRisk?.level === 'High' || node.licenseRisk?.level === 'Critical') {
-                // Draw small yellow triangle warn icon
-                const wx = node.x - radius + 2;
-                const wy = node.y + radius - 2;
+              // Draw Conflict and Diamond warning icons floating around the node circle
+              if (node.hasVersionConflict) {
+                const cx = node.x - radius + 2;
+                const cy = node.y - radius + 2;
                 ctx.beginPath();
-                ctx.arc(wx, wy, 4, 0, Math.PI * 2, false);
-                ctx.fillStyle = '#fbbf24';
+                ctx.arc(cx, cy, 5, 0, Math.PI * 2, false);
+                ctx.fillStyle = '#f97316'; // Orange warning tag
                 ctx.fill();
+                ctx.beginPath();
+                ctx.arc(cx, cy, 5, 0, Math.PI * 2, false);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 0.8;
+                ctx.stroke();
+
+                ctx.font = 'bold 6px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText('C', cx, cy);
+              }
+
+              if (node.hasDiamondDependency) {
+                const dx = node.x - radius + 2;
+                const dy = node.y + radius - 2;
+                ctx.beginPath();
+                ctx.arc(dx, dy, 5, 0, Math.PI * 2, false);
+                ctx.fillStyle = '#8b5cf6'; // Violet diamond tag
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(dx, dy, 5, 0, Math.PI * 2, false);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 0.8;
+                ctx.stroke();
+
+                ctx.font = 'bold 6px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText('D', dx, dy);
+              }
+
+              // Draw Patch Status color dot (🟢 for patch, 🔴 for unpatched vuln)
+              if (node.vulnerabilities?.length > 0) {
+                const px = node.x + radius - 2;
+                const py = node.y + radius - 2;
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, Math.PI * 2, false);
+                ctx.fillStyle = node.remediationStatus === 'PATCH_AVAILABLE' ? '#10b981' : '#ef4444';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, Math.PI * 2, false);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 0.8;
+                ctx.stroke();
               }
 
               // Draw Text labels if zoomed in

@@ -24,6 +24,13 @@ const SEVERITY_COLORS = {
   SAFE: '#10b981'
 };
 
+const MAINTENANCE_COLORS = {
+  Healthy: '#10b981',
+  Aging: '#fbbf24',
+  Stale: '#f97316',
+  Unmaintained: '#ef4444'
+};
+
 export default function Findings() {
   const [graph, setGraph] = useState([]);
   const [stats, setStats] = useState(null);
@@ -50,6 +57,21 @@ export default function Findings() {
   const [onlyDirect, setOnlyDirect] = useState(false);
   const [onlyLicenseConflicts, setOnlyLicenseConflicts] = useState(false);
   const [onlyUnmaintained, setOnlyUnmaintained] = useState(false);
+
+  // NEW ANOMALIES FILTERS
+  const [onlyConflicts, setOnlyConflicts] = useState(false);
+  const [onlyDiamonds, setOnlyDiamonds] = useState(false);
+  const [onlyHighExploitability, setOnlyHighExploitability] = useState(false);
+  const [onlyPatchAvailable, setOnlyPatchAvailable] = useState(false);
+  const [onlyNoPatchAvailable, setOnlyNoPatchAvailable] = useState(false);
+  const [onlyHighBlastRadius, setOnlyHighBlastRadius] = useState(false);
+
+  // FEATURE 1 & 3 & 4 & 5 FILTERS
+  const [onlyAging, setOnlyAging] = useState(false);
+  const [onlyStale, setOnlyStale] = useState(false);
+  const [onlyMultiplePaths, setOnlyMultiplePaths] = useState(false);
+  const [popularityLevelFilter, setPopularityLevelFilter] = useState('');
+  const [importanceLevelFilter, setImportanceLevelFilter] = useState('');
 
   // Sorting state
   const [sortKey, setSortKey] = useState('riskScore');
@@ -98,6 +120,19 @@ export default function Findings() {
     setOnlyDirect(false);
     setOnlyLicenseConflicts(false);
     setOnlyUnmaintained(false);
+    setOnlyConflicts(false);
+    setOnlyDiamonds(false);
+    setOnlyHighExploitability(false);
+    setOnlyPatchAvailable(false);
+    setOnlyNoPatchAvailable(false);
+    setOnlyHighBlastRadius(false);
+    
+    setOnlyAging(false);
+    setOnlyStale(false);
+    setOnlyMultiplePaths(false);
+    setPopularityLevelFilter('');
+    setImportanceLevelFilter('');
+
     setCurrentPage(1);
   };
 
@@ -159,9 +194,24 @@ export default function Findings() {
       if (onlyLicenseConflicts && node.licenseRisk?.level !== 'High' && node.licenseRisk?.level !== 'Critical') return false;
       if (onlyUnmaintained && node.maintenanceRisk?.level !== 'High') return false;
 
+      // NEW ANOMALIES TOGGLES
+      if (onlyConflicts && !node.hasVersionConflict) return false;
+      if (onlyDiamonds && !node.hasDiamondDependency) return false;
+      if (onlyHighExploitability && !node.vulnerabilities?.some(v => String(v.exploitability).toUpperCase() === 'HIGH')) return false;
+      if (onlyPatchAvailable && node.remediationStatus !== 'PATCH_AVAILABLE') return false;
+      if (onlyNoPatchAvailable && node.remediationStatus !== 'MITIGATION_REQUIRED') return false;
+      if (onlyHighBlastRadius && node.impactLevel !== 'High' && node.impactLevel !== 'Very High') return false;
+
+      // NEW FEATURES FILTERING
+      if (onlyAging && node.maintenanceStatus !== 'Aging') return false;
+      if (onlyStale && node.maintenanceStatus !== 'Stale') return false;
+      if (onlyMultiplePaths && (!node.pathCount || node.pathCount <= 1)) return false;
+      if (popularityLevelFilter && node.popularityLevel !== popularityLevelFilter) return false;
+      if (importanceLevelFilter && node.importanceLevel !== importanceLevelFilter) return false;
+
       return true;
     });
-  }, [graph, search, cveSearch, severityFilter, appFilter, depTypeFilter, licenseRiskFilter, maintenanceFilter, minRiskScore, onlyCritical, onlyVulnerable, onlyTransitive, onlyDirect, onlyLicenseConflicts, onlyUnmaintained]);
+  }, [graph, search, cveSearch, severityFilter, appFilter, depTypeFilter, licenseRiskFilter, maintenanceFilter, minRiskScore, onlyCritical, onlyVulnerable, onlyTransitive, onlyDirect, onlyLicenseConflicts, onlyUnmaintained, onlyConflicts, onlyDiamonds, onlyHighExploitability, onlyPatchAvailable, onlyNoPatchAvailable, onlyHighBlastRadius, onlyAging, onlyStale, onlyMultiplePaths, popularityLevelFilter, importanceLevelFilter]);
 
   // Sorting
   const sortedNodes = useMemo(() => {
@@ -302,21 +352,11 @@ export default function Findings() {
       { name: 'Transitive', value: transitiveCount, color: '#8b5cf6' }
     ];
 
-    // 5. Top 10 risky packages
-    const topRiskiest = [...graph]
-      .sort((a, b) => (b.riskScore || 0) - (a.riskScore || 0))
-      .slice(0, 10)
-      .map(node => ({
-        name: node.name,
-        score: node.riskScore || 0
-      }));
-
     return {
       severityData,
       appData,
       riskBuckets,
-      directTransitiveData,
-      topRiskiest
+      directTransitiveData
     };
   }, [graph]);
 
@@ -488,22 +528,25 @@ export default function Findings() {
               </div>
 
               <div className="filter-group">
-                <label>License Risk</label>
-                <select value={licenseRiskFilter} onChange={e => setLicenseRiskFilter(e.target.value)}>
-                  <option value="">All Risks</option>
-                  <option value="HIGH">High</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="LOW">Low</option>
-                  <option value="NONE">None</option>
+                <label>Popularity Level</label>
+                <select value={popularityLevelFilter} onChange={e => setPopularityLevelFilter(e.target.value)}>
+                  <option value="">All Levels</option>
+                  <option value="Very High">Very High</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                  <option value="Very Low">Very Low</option>
                 </select>
               </div>
 
               <div className="filter-group">
-                <label>Maintenance Status</label>
-                <select value={maintenanceFilter} onChange={e => setMaintenanceFilter(e.target.value)}>
-                  <option value="">All Statuses</option>
-                  <option value="HIGH">Unmaintained (High)</option>
-                  <option value="LOW">Active (Low)</option>
+                <label>Importance Level</label>
+                <select value={importanceLevelFilter} onChange={e => setImportanceLevelFilter(e.target.value)}>
+                  <option value="">All Levels</option>
+                  <option value="Critical">Critical</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
                 </select>
               </div>
 
@@ -546,6 +589,40 @@ export default function Findings() {
                   Unmaintained
                 </label>
               </div>
+            </div>
+
+            {/* NEW SUPPLY CHAIN ANOMALIES & HEALTH TOGGLES */}
+            <div className="findings-filters__row" style={{ marginTop: '10px' }}>
+              <div className="filter-checkbox-group">
+                <label className="filter-checkbox" style={{ color: '#7c3aed' }}>
+                  <input type="checkbox" checked={onlyConflicts} onChange={e => setOnlyConflicts(e.target.checked)} />
+                  ⚠️ Version Conflicts
+                </label>
+                <label className="filter-checkbox" style={{ color: '#7c3aed' }}>
+                  <input type="checkbox" checked={onlyDiamonds} onChange={e => setOnlyDiamonds(e.target.checked)} />
+                  💎 Diamonds
+                </label>
+                <label className="filter-checkbox" style={{ color: '#fbbf24' }}>
+                  <input type="checkbox" checked={onlyAging} onChange={e => setOnlyAging(e.target.checked)} />
+                  🟡 Aging
+                </label>
+                <label className="filter-checkbox" style={{ color: '#f97316' }}>
+                  <input type="checkbox" checked={onlyStale} onChange={e => setOnlyStale(e.target.checked)} />
+                  🟠 Stale
+                </label>
+                <label className="filter-checkbox" style={{ color: '#8b5cf6' }}>
+                  <input type="checkbox" checked={onlyMultiplePaths} onChange={e => setOnlyMultiplePaths(e.target.checked)} />
+                  🔗 Multiple Paths
+                </label>
+                <label className="filter-checkbox" style={{ color: '#10b981' }}>
+                  <input type="checkbox" checked={onlyPatchAvailable} onChange={e => setOnlyPatchAvailable(e.target.checked)} />
+                  🟢 Patched
+                </label>
+                <label className="filter-checkbox" style={{ color: '#ef4444' }}>
+                  <input type="checkbox" checked={onlyNoPatchAvailable} onChange={e => setOnlyNoPatchAvailable(e.target.checked)} />
+                  🔴 Unpatched
+                </label>
+              </div>
 
               <button className="btn-reset" onClick={handleResetFilters}>
                 Reset Filters
@@ -577,24 +654,24 @@ export default function Findings() {
                 <th onClick={() => requestSort('name')}>Package</th>
                 <th onClick={() => requestSort('version')}>Version</th>
                 <th onClick={() => requestSort('riskScore')}>Risk Score</th>
-                <th>CVE IDs</th>
-                <th onClick={() => requestSort('depth')}>Type</th>
-                <th>Affected Apps</th>
-                <th>License</th>
-                <th>Priority</th>
+                <th>Compounded Risk</th>
+                <th>Maintenance</th>
+                <th>Remediation</th>
+                <th>Paths</th>
+                <th>Popularity</th>
+                <th>Importance</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="10" style={{ textAlign: 'center', padding: '40px' }}>Loading findings database...</td>
+                  <td colSpan="11" style={{ textAlign: 'center', padding: '40px' }}>Loading findings database...</td>
                 </tr>
               ) : paginatedNodes.length > 0 ? (
                 paginatedNodes.map(node => {
                   const isExpanded = expandedIds.has(node.id);
                   const severity = getNodeSeverity(node);
-                  const isDirect = node.depth === 0;
 
                   return (
                     <tr key={node.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
@@ -605,41 +682,44 @@ export default function Findings() {
                       </td>
                       <td style={{ fontWeight: 'bold' }}>{node.name}</td>
                       <td className="mono">{node.version}</td>
-                      <td className="mono" style={{ fontWeight: 'bold' }}>{node.riskScore}</td>
-                      <td>
-                        {node.vulnerabilities?.length > 0 ? (
-                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                            {node.vulnerabilities.slice(0, 2).map(v => (
-                              <span
-                                key={v.cveId}
-                                className="mono"
-                                style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '2px 4px', borderRadius: '4px', cursor: 'pointer' }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  copyToClipboard(v.cveId);
-                                }}
-                                title="Click to copy CVE ID"
-                              >
-                                {v.cveId}
-                              </span>
-                            ))}
-                            {node.vulnerabilities.length > 2 && (
-                              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>+{node.vulnerabilities.length - 2} more</span>
-                            )}
-                          </div>
-                        ) : (
-                          <span style={{ color: '#94a3b8' }}>None</span>
-                        )}
+                      <td className="mono">{node.riskScore}</td>
+                      <td className="mono" style={{ fontWeight: 'bold', color: node.compoundedRisk >= 75 ? '#ef4444' : '#1e1b4b' }}>
+                        {node.compoundedRisk || node.riskScore}
                       </td>
+                      {/* Maintenance status badge */}
                       <td>
-                        <span style={{ fontSize: '0.75rem', fontWeight: '600', color: isDirect ? '#3b82f6' : '#8b5cf6' }}>
-                          {isDirect ? 'Direct' : 'Transitive'}
+                        <span className="badge-count" style={{ background: MAINTENANCE_COLORS[node.maintenanceStatus || 'Healthy'], color: '#ffffff' }}>
+                          {node.maintenanceStatus || 'Healthy'}
                         </span>
                       </td>
-                      <td className="mono">{node.affectedApplications?.length || 0}</td>
-                      <td>{node.license || 'Unknown'}</td>
+                      {/* Patch Status Column */}
                       <td>
-                        <span style={{ fontSize: '0.8rem', fontWeight: '500' }}>{node.priority}</span>
+                        {node.remediationStatus === 'PATCH_AVAILABLE' ? (
+                          <span style={{ color: '#10b981', fontWeight: 'bold' }}>🟢 Patch</span>
+                        ) : node.remediationStatus === 'MITIGATION_REQUIRED' ? (
+                          <span style={{ color: '#ef4444', fontWeight: 'bold' }}>🔴 Mitigation</span>
+                        ) : (
+                          <span style={{ color: '#94a3b8' }}>N/A</span>
+                        )}
+                      </td>
+                      {/* Path count */}
+                      <td className="mono" style={{ fontWeight: 'bold' }}>
+                        {node.pathCount || 1} paths
+                      </td>
+                      {/* Popularity */}
+                      <td>
+                        <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#3b82f6' }}>
+                          📈 {node.popularityLevel || 'Low'}
+                        </span>
+                      </td>
+                      {/* Importance Level */}
+                      <td>
+                        <span style={{
+                          fontWeight: 'bold',
+                          color: node.importanceLevel === 'Critical' || node.importanceLevel === 'High' ? '#ef4444' : '#10b981'
+                        }}>
+                          🛡️ {node.importanceLevel || 'Low'}
+                        </span>
                       </td>
                       <td>
                         <button className="btn-utility" onClick={() => toggleRow(node.id)}>
@@ -651,7 +731,7 @@ export default function Findings() {
                 })
               ) : (
                 <tr>
-                  <td colSpan="10" style={{ textAlign: 'center', padding: '40px' }}>No findings match the active filters.</td>
+                  <td colSpan="11" style={{ textAlign: 'center', padding: '40px' }}>No findings match the active filters.</td>
                 </tr>
               )}
             </tbody>
@@ -685,8 +765,7 @@ export default function Findings() {
         if (!expandedIds.has(node.id)) return null;
 
         const isDirect = node.depth === 0;
-        const vulnPatch = node.vulnerabilities?.some(v => v.fixedVersion) ? 'Yes (Upgrade Recommended)' : 'No Patch Available';
-        const exploitRating = node.vulnerabilities?.some(v => Number(v.cvssScore || v.cvss || 0) >= 9) ? 'Critical Exploit (Active POC)' : 'High Exploitability';
+        const vulnPatch = node.remediationStatus === 'PATCH_AVAILABLE' ? 'Upgrade Available' : 'No Patch / Mitigation Required';
         const parentChain = node.parents?.join(' → ') || 'Root direct dependency';
         const childrenList = node.children?.join(', ') || 'No sub-dependencies';
 
@@ -699,90 +778,78 @@ export default function Findings() {
               <button className="btn-utility" onClick={() => toggleRow(node.id)}>&times; Close Detail</button>
             </div>
 
-            <div className="expanded-panel__grid">
-              {/* Security Details */}
+            <div className="expanded-panel__grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+              {/* Security Narrative */}
               <div className="expanded-card">
-                <h4>Security Details</h4>
-                <div className="details-grid">
-                  <div className="details-item">
-                    <label>Vulnerabilities Count</label>
-                    <span>{node.vulnerabilities?.length || 0} issues</span>
-                  </div>
-                  <div className="details-item">
-                    <label>Patch Status</label>
-                    <span>{vulnPatch}</span>
-                  </div>
-                  <div className="details-item">
-                    <label>Exploitability</label>
-                    <span>{exploitRating}</span>
-                  </div>
-                  <div className="details-item">
-                    <label>License Risk</label>
-                    <span>{node.licenseRisk?.level || 'Safe'} ({node.licenseRisk?.message || 'No conflict'})</span>
-                  </div>
+                <h4>⚡ AI Security Narrative</h4>
+                <p style={{ fontSize: '0.85rem', color: '#1e293b', lineHeight: 1.5 }}>
+                  {node.securityNarrative}
+                </p>
+              </div>
+
+              {/* Attack Path Analysis */}
+              <div className="expanded-card">
+                <h4>⛓️ AI Attack Path Analysis</h4>
+                <p style={{ fontSize: '0.85rem', color: '#1e293b', lineHeight: 1.5, marginBottom: '8px' }}>
+                  {node.attackAnalysis?.chainExplanation}
+                </p>
+                <div style={{ maxHeight: '100px', overflowY: 'auto', background: 'rgba(139,92,246,0.05)', padding: '6px', borderRadius: '6px' }}>
+                  {node.dependencyPaths?.map((p, i) => (
+                    <div key={i} className="mono" style={{ fontSize: '0.75rem', padding: '2px 0' }}>
+                      {p.join(' → ')}
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Dependency Details */}
+              {/* Risk Explainer */}
               <div className="expanded-card">
-                <h4>Dependency Path & Blast</h4>
-                <div className="details-grid" style={{ gridTemplateColumns: '1fr' }}>
-                  <div className="details-item">
-                    <label>Dependency Chain (Parents)</label>
-                    <span className="mono" style={{ fontSize: '0.8rem', wordBreak: 'break-all' }}>{parentChain}</span>
-                  </div>
-                  <div className="details-item">
-                    <label>Direct Children</label>
-                    <span className="mono" style={{ fontSize: '0.8rem', wordBreak: 'break-all' }}>{childrenList}</span>
-                  </div>
-                  <div className="details-item">
-                    <label>Blast Radius Score</label>
-                    <span>{Number((node.affectedApplications?.length || 0) * 1.5 + (node.children?.length || 0) * 0.5).toFixed(1)}</span>
-                  </div>
+                <h4>📊 AI Risk Score Explainer</h4>
+                <p style={{ fontSize: '0.85rem', color: '#1e293b', lineHeight: 1.5, marginBottom: '8px' }}>
+                  {node.riskExplanation?.finalScoreExplanation}
+                </p>
+                <div className="details-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', fontSize: '0.75rem' }}>
+                  <div>Vuln contribution: <strong>+{node.riskExplanation?.vulnerabilityContribution || 0}</strong></div>
+                  <div>Exploitability: <strong>+{node.riskExplanation?.exploitabilityContribution || 0}</strong></div>
+                  <div>Maintenance: <strong>+{node.riskExplanation?.maintenanceContribution || 0}</strong></div>
+                  <div>License: <strong>+{node.riskExplanation?.licenseContribution || 0}</strong></div>
+                  <div>Paths offset: <strong>+{node.riskExplanation?.pathContribution || 0}</strong></div>
+                  <div>Criticality multiplier: <strong>x{node.riskExplanation?.criticalityMultiplier || 1.0}</strong></div>
                 </div>
               </div>
 
               {/* Business Impact */}
               <div className="expanded-card">
-                <h4>Business & App Impact</h4>
-                <div className="details-grid" style={{ gridTemplateColumns: '1fr' }}>
-                  <div className="details-item">
-                    <label>Affected Applications</label>
-                    <span className="mono">{node.affectedApplications?.join(', ') || 'No affected applications'}</span>
-                  </div>
-                  <div className="details-item">
-                    <label>Business Criticality</label>
-                    <span>{node.affectedApplications?.length >= 3 ? 'High Criticality' : 'Medium-Low'}</span>
-                  </div>
+                <h4>🏢 AI Business Impact Engine</h4>
+                <p style={{ fontSize: '0.85rem', color: '#1e293b', lineHeight: 1.5 }}>
+                  {node.businessImpact?.impactNarrative}
+                </p>
+                <div className="details-grid" style={{ gridTemplateColumns: '1fr 1fr', marginTop: '8px', fontSize: '0.75rem' }}>
+                  <div>Impact Level: <strong>{node.businessImpact?.impactLevel}</strong></div>
+                  <div>Blast Score: <strong>{node.businessImpact?.blastRadius}</strong></div>
                 </div>
               </div>
 
-              {/* Remediation */}
-              <div className="expanded-card" style={{ gridColumn: 'span 1' }}>
-                <h4>Action & Remediation</h4>
-                <div className="details-grid" style={{ gridTemplateColumns: '1fr' }}>
+              {/* Remediation Advice */}
+              <div className="expanded-card" style={{ gridColumn: 'span 2' }}>
+                <h4>🛠️ AI Remediation Advice</h4>
+                <div className="details-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
                   <div className="details-item">
-                    <label>Recommendation</label>
-                    <span>
-                      {node.vulnerabilities?.some(v => v.fixedVersion) 
-                        ? `Upgrade ${node.name} to version ${node.vulnerabilities.find(v => v.fixedVersion)?.fixedVersion}`
-                        : `Review alternative packages for ${node.name}`}
-                    </span>
+                    <label>Immediate Action</label>
+                    <span style={{ fontWeight: 'bold', color: '#7c3aed' }}>{node.remediation?.immediateAction}</span>
                   </div>
                   <div className="details-item">
-                    <label>Migration Steps</label>
-                    <span>
-                      {isDirect 
-                        ? `Update the dependencies section in package.json and run npm install.`
-                        : `Update root parent dependencies: [${node.parents?.slice(0,2).join(', ')}] to resolve transitive dependency.`}
+                    <label>Urgency Level</label>
+                    <span style={{ fontWeight: 'bold', color: node.remediation?.urgency === 'Critical' ? '#ef4444' : '#fbbf24' }}>
+                      {node.remediation?.urgency}
                     </span>
                   </div>
-                  <div className="details-item">
-                    <label>Estimated Effort</label>
-                    <span style={{ color: isDirect ? '#10b981' : '#fbbf24' }}>
-                      {isDirect ? 'Low (Simple package bump)' : 'Medium (Transitive dependency update required)'}
-                    </span>
-                  </div>
+                </div>
+                <p style={{ fontSize: '0.85rem', color: '#1e293b', lineHeight: 1.5, margin: '8px 0' }}>
+                  {node.remediation?.remediationNarrative}
+                </p>
+                <div style={{ fontSize: '0.8rem', background: '#f8fafc', padding: '8px', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.05)' }}>
+                  <strong>Recommendation:</strong> {node.remediation?.recommendation}
                 </div>
               </div>
             </div>

@@ -543,6 +543,7 @@ export default function Graph() {
               showOnlyCriticalPaths
             }}
             graphMode={graphMode}
+            selectedNode={selectedNode}
             onSelectNode={setSelectedNode}
           />
         </div>
@@ -556,7 +557,6 @@ export default function Graph() {
                 &times;
               </button>
             </div>
-
             <div className="details-sidebar__content">
               {/* Package info */}
               <div className="details-section">
@@ -591,18 +591,69 @@ export default function Graph() {
                 </div>
               </div>
 
-              {/* Application impact */}
+              {/* AI Security Narrative */}
               <div className="details-section">
-                <h3>Supply Chain Impact</h3>
-                <div className="details-grid">
-                  <div className="details-item">
-                    <label>Affected Applications</label>
-                    <span>{selectedNode.affectedApplications?.length || 0}</span>
-                  </div>
-                  <div className="details-item">
-                    <label>Depth in Tree</label>
-                    <span>{selectedNode.depth}</span>
-                  </div>
+                <h3>⚡ AI Security Narrative</h3>
+                <p style={{ fontSize: '0.82rem', color: '#1e293b', lineHeight: 1.5, margin: 0 }}>
+                  {selectedNode.securityNarrative}
+                </p>
+              </div>
+
+              {/* AI Attack Path Analysis */}
+              <div className="details-section">
+                <h3>⛓️ AI Attack Path Analysis</h3>
+                <p style={{ fontSize: '0.82rem', color: '#1e293b', lineHeight: 1.5, marginBottom: '6px' }}>
+                  {selectedNode.attackAnalysis?.chainExplanation}
+                </p>
+                <div style={{ maxHeight: '90px', overflowY: 'auto', background: 'rgba(139,92,246,0.05)', padding: '6px', borderRadius: '6px' }}>
+                  {selectedNode.dependencyPaths?.map((p, i) => (
+                    <div key={i} className="mono" style={{ fontSize: '0.7rem', padding: '2px 0' }}>
+                      {p.join(' → ')}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI Risk Score Explainer */}
+              <div className="details-section">
+                <h3>📊 AI Risk Score Explainer</h3>
+                <p style={{ fontSize: '0.82rem', color: '#1e293b', lineHeight: 1.5, marginBottom: '6px' }}>
+                  {selectedNode.riskExplanation?.finalScoreExplanation}
+                </p>
+                <div className="details-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px', fontSize: '0.72rem' }}>
+                  <div>Base risk: <strong>+{selectedNode.riskExplanation?.vulnerabilityContribution || 0}</strong></div>
+                  <div>Exploitability: <strong>+{selectedNode.riskExplanation?.exploitabilityContribution || 0}</strong></div>
+                  <div>Maintenance: <strong>+{selectedNode.riskExplanation?.maintenanceContribution || 0}</strong></div>
+                  <div>License: <strong>+{selectedNode.riskExplanation?.licenseContribution || 0}</strong></div>
+                  <div>Paths count: <strong>{selectedNode.pathCount || 1} ({selectedNode.pathRiskMultiplier || 1.0}x)</strong></div>
+                  <div>Compounded: <strong>{selectedNode.compoundedRisk || selectedNode.riskScore}</strong></div>
+                </div>
+              </div>
+
+              {/* AI Business Impact */}
+              <div className="details-section">
+                <h3>🏢 AI Business Impact</h3>
+                <p style={{ fontSize: '0.82rem', color: '#1e293b', lineHeight: 1.5, margin: 0 }}>
+                  {selectedNode.businessImpact?.impactNarrative}
+                </p>
+                <div className="details-grid" style={{ gridTemplateColumns: '1fr 1fr', marginTop: '6px', fontSize: '0.72rem' }}>
+                  <div>Impact rating: <strong>{selectedNode.businessImpact?.impactLevel}</strong></div>
+                  <div>Blast Score: <strong>{selectedNode.businessImpact?.blastRadius}</strong></div>
+                </div>
+              </div>
+
+              {/* AI Remediation Advice */}
+              <div className="details-section">
+                <h3>🛠️ AI Remediation Advice</h3>
+                <div className="details-grid" style={{ gridTemplateColumns: '1fr 1fr', marginBottom: '6px' }}>
+                  <div>Action: <strong>{selectedNode.remediation?.immediateAction}</strong></div>
+                  <div>Urgency: <strong>{selectedNode.remediation?.urgency}</strong></div>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: '#1e293b', lineHeight: 1.5, marginBottom: '6px' }}>
+                  {selectedNode.remediation?.remediationNarrative}
+                </p>
+                <div style={{ fontSize: '0.75rem', background: '#f8fafc', padding: '6px', borderRadius: '4px', border: '1px solid rgba(0,0,0,0.05)' }}>
+                  <strong>Copilot:</strong> {selectedNode.remediation?.recommendation}
                 </div>
               </div>
 
@@ -618,11 +669,14 @@ export default function Graph() {
                           <span className="vuln-item__score">CVSS {vuln.cvssScore}</span>
                         </div>
                         <p className="vuln-item__desc">{vuln.description}</p>
-                        {vuln.fixedVersion && (
-                          <div style={{ fontSize: '0.75rem', color: '#7c3aed', marginTop: '4px' }}>
-                            <strong>Recommendation:</strong> Upgrade to v{vuln.fixedVersion}
-                          </div>
-                        )}
+                        <div style={{ fontSize: '0.75rem', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div><strong>Exploitability:</strong> {vuln.exploitability || 'UNKNOWN'}</div>
+                          {vuln.fixedVersion && (
+                            <div style={{ color: '#7c3aed' }}>
+                              <strong>Recommendation:</strong> Upgrade to v{vuln.fixedVersion}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

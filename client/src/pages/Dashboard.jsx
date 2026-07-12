@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getGraph, getStats, getPriorities, getValidation } from '../services/api';
+import { getGraph, getStats, getPriorities, getValidation, getAISummary } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import {
   PieChart,
@@ -38,6 +38,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [graph, setGraph] = useState([]);
   const [validation, setValidation] = useState(null);
+  const [aiSummary, setAiSummary] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Search & Filters for Top Risks Table
@@ -50,15 +51,17 @@ export default function Dashboard() {
     async function fetchDashboardData() {
       try {
         setLoading(true);
-        const [statsRes, graphRes, validationRes] = await Promise.all([
+        const [statsRes, graphRes, validationRes, aiRes] = await Promise.all([
           getStats(),
           getGraph(),
-          getValidation()
+          getValidation(),
+          getAISummary()
         ]);
         if (isMounted) {
           setStats(statsRes.data);
           setGraph(Array.isArray(graphRes.data) ? graphRes.data : []);
           setValidation(validationRes.data);
+          setAiSummary(aiRes.data);
         }
       } catch (err) {
         console.error('Failed to load dashboard statistics.', err);
@@ -492,15 +495,36 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* EXECUTIVE INSIGHTS */}
-      <section className="exec-insights">
-        <h3>💡 Supply Chain Command Center Insights</h3>
-        <div className="exec-insights__list">
-          {executiveInsights.map((insight, i) => (
-            <div key={i} className="exec-insight-item" dangerouslySetInnerHTML={{ __html: insight }} />
-          ))}
-        </div>
-      </section>
+      {/* SECURITY INTELLIGENCE CO-PILOT PANEL */}
+      {aiSummary && (
+        <section className="posture-card" style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%)' }}>
+          <h2 style={{ color: '#7c3aed', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>⚡</span> DependLens Copilot Intelligence
+          </h2>
+          <p style={{ fontSize: '0.9rem', color: '#1e293b', lineHeight: 1.6, margin: '0 0 16px 0', borderLeft: '3px solid #8b5cf6', paddingLeft: '12px' }}>
+            {aiSummary.executiveSummary}
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+            <div className="health-item">
+              <label>Most Dangerous Library</label>
+              <span style={{ color: '#ef4444' }}>{aiSummary.mostDangerousDependency}</span>
+            </div>
+            <div className="health-item">
+              <label>Highest Risk Application</label>
+              <span style={{ color: '#fbbf24' }}>{aiSummary.highestRiskApplication}</span>
+            </div>
+            <div className="health-item">
+              <label>Largest Blast Radius</label>
+              <span>{aiSummary.largestBlastRadius}</span>
+            </div>
+            <div className="health-item">
+              <label>Top Copilot Action</label>
+              <span style={{ fontSize: '0.85rem', color: '#10b981' }}>{aiSummary.topRecommendation}</span>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* RISK DISTRIBUTION SECTION CHARTS */}
       <section className="charts-dashboard-grid">

@@ -8,7 +8,7 @@
     "business_owner": "Sarah Chen",
     "department": "Engineering",
     "deployment": "cloud"
-  },
+  }, 
   {
     "app_id": "APP-002",
     "name": "PaymentService",

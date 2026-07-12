@@ -22,6 +22,7 @@ const { buildGraph } = require("./engines/graph");
 const { attachVulnerabilities } = require("./engines/vulnerability");
 const { analyzeLicenses } = require("./engines/license");
 const { analyzeMaintenance } = require("./engines/maintenance");
+const { analyzeSupplyChainAnomalies } = require("./engines/supplyChainAnomalies");
 const { calculateRiskScores } = require("./engines/riskScore");
 const { prioritizeRisks } = require("./engines/prioritization");
 const { buildValidationSummary } = require("./engines/validation");
@@ -88,6 +89,7 @@ const graph = buildGraph(dependencies, applicationsMap, transitiveDependencies);
 attachVulnerabilities(graph, vulnerabilityDb, labels);
 analyzeLicenses(graph, licenseRules);
 analyzeMaintenance(graph);
+analyzeSupplyChainAnomalies(graph);
 
 const labelRows = Array.isArray(labels) ? labels : [];
 for (const node of graph.values()) {
@@ -103,6 +105,22 @@ for (const node of graph.values()) {
 
 calculateRiskScores(graph);
 prioritizeRisks(graph);
+
+const { generateSecurityNarrative } = require("./engines/narrative");
+const { generateAttackPaths } = require("./engines/attackPath");
+const { generateRemediation } = require("./engines/remediation");
+const { explainRisk } = require("./engines/explainRisk");
+const { generateBusinessImpact } = require("./engines/businessImpact");
+
+for (const node of graph.values()) {
+  if (node.type === 'application') continue;
+  node.securityNarrative = generateSecurityNarrative(node);
+  node.attackAnalysis = generateAttackPaths(node);
+  node.remediation = generateRemediation(node);
+  node.riskExplanation = explainRisk(node);
+  node.businessImpact = generateBusinessImpact(node);
+}
+
 const vulnerabilityInstances = buildVulnerabilityInstances(graph);
 const directVulnerabilities = vulnerabilityInstances.filter((instance) => instance.risk_type === 'VULNERABLE_DEPENDENCY').length;
 const transitiveVulnerabilities = vulnerabilityInstances.filter((instance) => instance.risk_type === 'TRANSITIVE_VULNERABILITY').length;
@@ -184,6 +202,144 @@ app.get("/api/validation", (req, res) => {
   res.json({
     summary,
     results,
+  });
+});
+
+app.get("/api/conflicts", (req, res) => {
+  const conflicts = [];
+  const seen = new Set();
+  for (const node of graph.values()) {
+    if (node.hasVersionConflict && !seen.has(node.name)) {
+      seen.add(node.name);
+      conflicts.push({
+        package: node.name,
+        versions: [node.version, ...node.conflictingVersions],
+        affectedApplications: node.conflictApplications,
+        severity: node.riskScore >= 70 ? 'CRITICAL' : (node.riskScore >= 40 ? 'HIGH' : 'MEDIUM')
+      });
+    }
+  }
+  res.json(conflicts);
+});
+
+app.get("/api/diamonds", (req, res) => {
+  const diamonds = [];
+  const seen = new Set();
+  for (const node of graph.values()) {
+    if (node.hasDiamondDependency && !seen.has(node.name)) {
+      seen.add(node.name);
+      diamonds.push({
+        package: node.name,
+        affectedApplications: node.affectedApplications,
+        paths: node.diamondPaths
+      });
+    }
+  }
+  res.json(diamonds);
+});
+
+app.get("/api/blast-radius", (req, res) => {
+  const list = [];
+  for (const node of graph.values()) {
+    if (node.type === 'application') continue;
+    list.push({
+      package: node.id,
+      blastRadius: node.blastRadius,
+      impactLevel: node.impactLevel,
+      affectedApplications: node.affectedApplications
+    });
+  }
+  list.sort((a,b) => b.blastRadius - a.blastRadius);
+  res.json(list);
+});
+
+app.get("/api/path-analysis", (req, res) => {
+  const list = [];
+  for (const node of graph.values()) {
+    if (node.type === 'application') continue;
+    list.push({
+      package: node.id,
+      pathCount: node.pathCount || 1,
+      affectedApplications: node.affectedApplications,
+      compoundedRisk: node.compoundedRisk || node.riskScore
+    });
+  }
+  list.sort((a,b) => b.pathCount - a.pathCount);
+  res.json(list);
+});
+
+app.get("/api/popularity", (req, res) => {
+  const list = [];
+  for (const node of graph.values()) {
+    if (node.type === 'application') continue;
+    list.push({
+      package: node.id,
+      popularityScore: node.popularityScore || 0,
+      popularityLevel: node.popularityLevel || 'Low'
+    });
+  }
+  list.sort((a,b) => b.popularityScore - a.popularityScore);
+  res.json(list);
+});
+
+app.get("/api/dependency-importance", (req, res) => {
+  const list = [];
+  for (const node of graph.values()) {
+    if (node.type === 'application') continue;
+    list.push({
+      package: node.id,
+      importanceScore: node.importanceScore || 0,
+      importanceLevel: node.importanceLevel || 'Low'
+    });
+  }
+  list.sort((a,b) => b.importanceScore - a.importanceScore);
+  res.json(list);
+});
+
+app.get("/api/ai-summary", (req, res) => {
+  const nodes = Array.from(graph.values()).filter(n => n.type !== 'application');
+  
+  const sortedByRisk = [...nodes].sort((a,b) => (b.compoundedRisk || b.riskScore) - (a.compoundedRisk || a.riskScore));
+  const mostDangerous = sortedByRisk[0];
+
+  const appRiskSum = {};
+  const appRiskCount = {};
+  nodes.forEach(node => {
+    if (Array.isArray(node.affectedApplications)) {
+      node.affectedApplications.forEach(app => {
+        appRiskSum[app] = (appRiskSum[app] || 0) + (node.riskScore || 0);
+        appRiskCount[app] = (appRiskCount[app] || 0) + 1;
+      });
+    }
+  });
+  let highestRiskApp = "None";
+  let maxAppRisk = -1;
+  for (const app of Object.keys(appRiskSum)) {
+    const avg = appRiskSum[app] / appRiskCount[app];
+    if (avg > maxAppRisk) {
+      maxAppRisk = avg;
+      highestRiskApp = app;
+    }
+  }
+
+  const sortedByBlast = [...nodes].sort((a,b) => (b.blastRadius || 0) - (a.blastRadius || 0));
+  const largestBlast = sortedByBlast[0];
+
+  const topRec = mostDangerous && mostDangerous.remediation 
+    ? mostDangerous.remediation.recommendation 
+    : "Maintain general package updates.";
+
+  const totalPkgs = nodes.length;
+  const vulnerableCount = nodes.filter(n => n.vulnerabilities?.length > 0).length;
+  const criticalCount = nodes.filter(n => n.priority === 'Fix Immediately').length;
+  const execSummary = `DependLens has audited your active software supply chain. Out of ${totalPkgs} monitored packages, we detected ${vulnerableCount} vulnerable packages, including ${criticalCount} critical remediation items requiring immediate turnaround. The highest operational risk is currently centered on ${mostDangerous ? mostDangerous.name : 'none'}. Implementation of patches and mitigation filters is advised to reduce transitive risk propagation.`;
+
+  res.json({
+    mostDangerousDependency: mostDangerous ? `${mostDangerous.name}@${mostDangerous.version}` : 'None',
+    highestRiskApplication: highestRiskApp,
+    largestBlastRadius: largestBlast ? `${largestBlast.name} (Blast Score: ${largestBlast.blastRadius})` : 'None',
+    topRecommendation: topRec,
+    executiveSummary: execSummary
   });
 });
 
