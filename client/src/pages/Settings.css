@@ -1,0 +1,79 @@
+.page-placeholder {
+  min-height: 100%;
+  display: grid;
+  gap: 24px;
+}
+
+.page-placeholder__heading {
+  display: grid;
+  gap: 8px;
+  padding: 0 0 8px;
+}
+
+.page-placeholder__eyebrow {
+  margin: 0;
+  color: #6f7480;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.page-placeholder__heading h1 {
+  margin: 0;
+  color: #172033;
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.page-placeholder__heading p {
+  margin: 0;
+  color: #6f7480;
+  max-width: 72ch;
+  line-height: 1.6;
+}
+
+.page-placeholder--settings {
+  padding-bottom: 24px;
+}
+
+.page-placeholder__panel {
+  padding: 24px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(112, 126, 170, 0.12);
+  box-shadow: 0 18px 30px rgba(35, 44, 78, 0.08);
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.settings-grid label {
+  display: grid;
+  gap: 8px;
+}
+
+.settings-grid span {
+  color: #6f7480;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.settings-grid input,
+.settings-grid select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(112, 126, 170, 0.14);
+  background: #ffffff;
+  color: #172033;
+}
+
+@media (max-width: 720px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}

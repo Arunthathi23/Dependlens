@@ -1,0 +1,219 @@
+.package-table {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.package-table__header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #172033;
+}
+
+.package-table__header p {
+  margin: 8px 0 0;
+  color: #6f7480;
+  font-size: 0.94rem;
+}
+
+.package-table__state {
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(112, 126, 170, 0.12);
+  color: #6f7480;
+}
+
+.package-table__state--error {
+  color: #c4383d;
+  border-color: rgba(196, 56, 61, 0.18);
+  background: rgba(196, 56, 61, 0.08);
+}
+
+.package-table__table-wrap {
+  overflow-x: auto;
+  border-radius: 24px;
+  border: 1px solid rgba(112, 126, 170, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 30px rgba(35, 44, 78, 0.08);
+}
+
+.package-table__table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.package-table__table thead th {
+  padding: 16px 18px;
+  text-align: left;
+  font-size: 0.76rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6f7480;
+  background: transparent;
+  border-bottom: 1px solid rgba(112, 126, 170, 0.12);
+}
+
+.package-table__table tbody td {
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(112, 126, 170, 0.12);
+  color: #172033;
+  vertical-align: middle;
+}
+
+.package-table__table tbody tr {
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.package-table__table tbody tr:hover {
+  background: rgba(91, 39, 194, 0.04);
+}
+
+.package-table__package-name {
+  font-weight: 600;
+  color: #172033;
+}
+
+.package-table__package-meta {
+  margin-top: 4px;
+  font-size: 0.84rem;
+  color: #6f7480;
+}
+
+.package-table__finding {
+  margin: 0;
+  color: #172033;
+  max-width: 48ch;
+  line-height: 1.55;
+}
+
+.package-table__count,
+.package-table__status,
+.package-table__details-value {
+  color: #172033;
+}
+
+.package-table__status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(91, 39, 194, 0.08);
+  border: 1px solid rgba(91, 39, 194, 0.18);
+  color: #5b27c2;
+  font-size: 0.88rem;
+}
+
+.severity-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.severity-chip--critical {
+  color: #c4383d;
+  background: rgba(196, 56, 61, 0.1);
+  border-color: rgba(196, 56, 61, 0.22);
+}
+
+.severity-chip--high {
+  color: #c67c2e;
+  background: rgba(198, 124, 46, 0.1);
+  border-color: rgba(198, 124, 46, 0.22);
+}
+
+.severity-chip--medium {
+  color: #5b27c2;
+  background: rgba(91, 39, 194, 0.08);
+  border-color: rgba(91, 39, 194, 0.18);
+}
+
+.severity-chip--safe {
+  color: #3c8f6d;
+  background: rgba(60, 143, 109, 0.1);
+  border-color: rgba(60, 143, 109, 0.2);
+}
+
+.package-table__empty {
+  text-align: center;
+  color: #6f7480;
+}
+
+.package-table__expand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #262a30;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #6f7480;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.package-table__expand:hover {
+  background: rgba(91, 39, 194, 0.04);
+  border-color: rgba(91, 39, 194, 0.22);
+  color: #5b27c2;
+}
+
+.package-table__chevron {
+  display: inline-block;
+  transition: transform 160ms ease;
+}
+
+.package-table__chevron--open {
+  transform: rotate(90deg);
+}
+
+.package-table__row--expanded {
+  background: rgba(91, 39, 194, 0.03);
+}
+
+.package-table__details-row td {
+  padding-top: 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(112, 126, 170, 0.12);
+}
+
+.package-table__details {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  padding: 0 18px 4px;
+}
+
+.package-table__details > div {
+  padding-top: 12px;
+  border-top: 1px solid rgba(112, 126, 170, 0.12);
+}
+
+.package-table__details-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #6f7480;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 720px) {
+  .package-table__header h3 {
+    font-size: 1rem;
+  }
+
+  .package-table__details {
+    grid-template-columns: 1fr 1fr;
+  }
+}
