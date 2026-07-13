@@ -1,0 +1,32 @@
+[
+  {
+    "app_id": "APP-001",
+    "name": "PaymentService",
+    "language": "Java",
+    "criticality": "CRITICAL",
+    "license_model": "proprietary",
+    "business_owner": "Mike Torres",
+    "department": "Finance",
+    "deployment": "cloud"
+  },
+  {
+    "app_id": "APP-002",
+    "name": "CustomerPortal",
+    "language": "JavaScript",
+    "criticality": "HIGH",
+    "license_model": "proprietary",
+    "business_owner": "Sarah Chen",
+    "department": "Engineering",
+    "deployment": "cloud"
+  },
+  {
+    "app_id": "APP-003",
+    "name": "InternalDashboard",
+    "language": "Python",
+    "criticality": "MEDIUM",
+    "license_model": "proprietary",
+    "business_owner": "Priya Patel",
+    "department": "Engineering",
+    "deployment": "on-prem"
+  }
+]

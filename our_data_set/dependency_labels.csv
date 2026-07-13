@@ -1,0 +1,14 @@
+dep_id,application_id,library,version,is_risky,risk_type,severity,explanation
+DEP-0001,APP-001,spring-boot,2.7.0,False,NONE,NONE,No known issues detected.
+DEP-0002,APP-001,log4j-core,2.14.0,True,TRANSITIVE_VULNERABILITY; UNMAINTAINED,CRITICAL,"Library log4j-core:2.14.0 has CVE-2021-44228 (CVSS 10.0, CRITICAL). Patch available (upgrade to 2.17.1). No updates since 2020-03-12 (reference date 2026-07-01) - exceeds 2-year threshold."
+DEP-0003,APP-001,legacy-auth,1.2.0,True,LICENSE_CONFLICT; UNMAINTAINED,CRITICAL,License 'GPL-3.0' flagged as License Conflict. No updates since 2019-01-01 (reference date 2026-07-01) - exceeds 2-year threshold.
+DEP-0004,APP-002,react,18.2.0,False,NONE,NONE,No known issues detected.
+DEP-0005,APP-002,axios,0.21.0,True,UNMAINTAINED,MEDIUM,No updates since 2022-02-11 (reference date 2026-07-01) - exceeds 2-year threshold.
+DEP-0006,APP-002,lodash,4.17.15,True,TRANSITIVE_VULNERABILITY; UNMAINTAINED,HIGH,"Library lodash:4.17.15 has CVE-2020-8203 (CVSS 7.5, HIGH). Patch available (upgrade to 4.17.21). No updates since 2020-04-15 (reference date 2026-07-01) - exceeds 2-year threshold."
+DEP-0007,APP-002,lodash,4.17.21,False,NONE,NONE,No known issues detected.
+DEP-0008,APP-002,shared-cache,2.0.0,True,LICENSE_REVIEW_NEEDED,MEDIUM,License 'LGPL-2.1' flagged as License Review Needed.
+DEP-0009,APP-003,django,3.2.0,False,NONE,NONE,No known issues detected.
+DEP-0010,APP-003,requests,2.18.0,True,UNMAINTAINED,MEDIUM,No updates since 2021-05-01 (reference date 2026-07-01) - exceeds 2-year threshold.
+DEP-0011,APP-003,unknown-parser,1.0.0,True,UNKNOWN_LICENSE_RISK,HIGH,License '(none specified)' flagged as Unknown License Risk.
+DEP-0012,APP-003,lodash,4.17.15,True,VULNERABLE_DEPENDENCY; UNMAINTAINED,HIGH,"Library lodash:4.17.15 has CVE-2020-8203 (CVSS 7.5, HIGH). Patch available (upgrade to 4.17.21). No updates since 2020-04-15 (reference date 2026-07-01) - exceeds 2-year threshold."
+DEP-0013,APP-003,crypto-utils,1.0.0,True,VULNERABLE_DEPENDENCY; UNMAINTAINED,HIGH,"Library crypto-utils:1.0.0 has CVE-2024-9999 (CVSS 8.6, HIGH). No patch available yet. No updates since 2017-01-01 (reference date 2026-07-01) - exceeds 2-year threshold."

@@ -1,0 +1,50 @@
+[
+  {
+    "license": "MIT",
+    "spdx": "MIT",
+    "risk_level": "LOW",
+    "compatible_with_proprietary": true,
+    "viral": false,
+    "notes": "Permissive; no restrictions on use"
+  },
+  {
+    "license": "Apache-2.0",
+    "spdx": "Apache-2.0",
+    "risk_level": "LOW",
+    "compatible_with_proprietary": true,
+    "viral": false,
+    "notes": "Permissive; patent grant included"
+  },
+  {
+    "license": "BSD-3-Clause",
+    "spdx": "BSD-3-Clause",
+    "risk_level": "LOW",
+    "compatible_with_proprietary": true,
+    "viral": false,
+    "notes": "Permissive; no endorsement clause"
+  },
+  {
+    "license": "LGPL-2.1",
+    "spdx": "LGPL-2.1-only",
+    "risk_level": "MEDIUM",
+    "compatible_with_proprietary": true,
+    "viral": false,
+    "notes": "Weak copyleft; linking OK, modifications must be shared"
+  },
+  {
+    "license": "GPL-3.0",
+    "spdx": "GPL-3.0-only",
+    "risk_level": "CRITICAL",
+    "compatible_with_proprietary": false,
+    "viral": true,
+    "notes": "Strong copyleft; derivative works must be GPL-3.0. Incompatible with proprietary distribution"
+  },
+  {
+    "license": "UNKNOWN",
+    "spdx": "NOASSERTION",
+    "risk_level": "HIGH",
+    "compatible_with_proprietary": false,
+    "viral": false,
+    "notes": "No license specified; legal status unclear. Treat as restrictive"
+  }
+]

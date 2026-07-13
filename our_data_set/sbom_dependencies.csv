@@ -1,0 +1,14 @@
+dep_id,application_id,application_name,library,version,license,dependency_type,last_updated,transitive_deps
+DEP-0001,APP-001,PaymentService,spring-boot,2.7.0,Apache-2.0,direct,2026-01-15,"log4j-core:2.14.0,legacy-auth:1.2.0"
+DEP-0002,APP-001,PaymentService,log4j-core,2.14.0,Apache-2.0,transitive,2020-03-12,
+DEP-0003,APP-001,PaymentService,legacy-auth,1.2.0,GPL-3.0,transitive,2019-01-01,
+DEP-0004,APP-002,CustomerPortal,react,18.2.0,MIT,direct,2026-02-01,
+DEP-0005,APP-002,CustomerPortal,axios,0.21.0,MIT,direct,2022-02-11,lodash:4.17.15
+DEP-0006,APP-002,CustomerPortal,lodash,4.17.15,MIT,transitive,2020-04-15,
+DEP-0007,APP-002,CustomerPortal,lodash,4.17.21,MIT,direct,2025-09-01,
+DEP-0008,APP-002,CustomerPortal,shared-cache,2.0.0,LGPL-2.1,direct,2025-11-01,
+DEP-0009,APP-003,InternalDashboard,django,3.2.0,BSD-3-Clause,direct,2025-08-18,requests:2.18.0
+DEP-0010,APP-003,InternalDashboard,requests,2.18.0,Apache-2.0,transitive,2021-05-01,unknown-parser:1.0.0
+DEP-0011,APP-003,InternalDashboard,unknown-parser,1.0.0,,transitive,2025-01-15,
+DEP-0012,APP-003,InternalDashboard,lodash,4.17.15,MIT,direct,2020-04-15,
+DEP-0013,APP-003,InternalDashboard,crypto-utils,1.0.0,MIT,direct,2017-01-01,

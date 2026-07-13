@@ -1,0 +1,37 @@
+[
+  {
+    "parent_library": "spring-boot",
+    "parent_version": "2.7.0",
+    "child_library": "log4j-core",
+    "child_version": "2.14.0",
+    "application_id": "APP-001"
+  },
+  {
+    "parent_library": "spring-boot",
+    "parent_version": "2.7.0",
+    "child_library": "legacy-auth",
+    "child_version": "1.2.0",
+    "application_id": "APP-001"
+  },
+  {
+    "parent_library": "axios",
+    "parent_version": "0.21.0",
+    "child_library": "lodash",
+    "child_version": "4.17.15",
+    "application_id": "APP-002"
+  },
+  {
+    "parent_library": "django",
+    "parent_version": "3.2.0",
+    "child_library": "requests",
+    "child_version": "2.18.0",
+    "application_id": "APP-003"
+  },
+  {
+    "parent_library": "requests",
+    "parent_version": "2.18.0",
+    "child_library": "unknown-parser",
+    "child_version": "1.0.0",
+    "application_id": "APP-003"
+  }
+]
